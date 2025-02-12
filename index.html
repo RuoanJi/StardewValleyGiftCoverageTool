@@ -134,9 +134,9 @@
                 <span class="tooltiptext">
                     <span v-if="item.remainingLoves.length > 0 || item.remainingLikes.length > 0">Additional coverage</span>
                     <br v-if="item.remainingLoves.length > 0 || item.remainingLikes.length > 0"/>
-                    <span v-if="item.remainingLoves.length > 0">Loves: {{item.remainingLoves.join(', ')}}</span>
+                    <span v-if="item.remainingLoves.length > 0">Loves ({{item.remainingLoves.length}}): {{item.remainingLoves.join(', ')}}</span>
                     <br v-if="item.remainingLoves.length > 0"/>
-                    <span v-if="item.remainingLikes.length > 0">Likes: {{item.remainingLikes.join(', ')}}</span>
+                    <span v-if="item.remainingLikes.length > 0">Likes ({{item.remainingLikes.length}}): {{item.remainingLikes.join(', ')}}</span>
                     <span v-if="item.remainingLoves.length == 0 && item.remainingLikes.length == 0">No more additional coverage!</span>
                 </span>
             </div>
