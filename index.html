@@ -7,8 +7,41 @@
             border: 1px solid black;
         }
 
+        #app {
+            padding-right: 200px;
+        }
+
         .no-extra-coverage {
             color: gray
+        }
+
+        /* Tooltip container */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border: 1px dotted black;
+            padding: 0px 10px;
+        }
+
+        /* Tooltip text */
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: max-content;
+            background-color: white;
+            color: black;
+            text-align: left;
+            padding: 0px 10px;
+            border-radius: 6px;
+            border: 1px solid black;
+            
+            /* Position the tooltip text - see examples below! */
+            position: absolute;
+            z-index: 1;
+        }
+
+        /* Show the tooltip text when you mouse over the tooltip container */
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
         }
     </style>
 </head>
@@ -95,16 +128,32 @@
     <div id="app">
         <div>
             <h2>Gifts to choose</h2>
-            <button v-for="item in items.filter(item => !item.selected)" @click="SelectItem(item)" :class="{'no-extra-coverage': item.remainingLikes == 0 && item.remainingLoves == 0}">{{item.name}}</button>
+            <div v-for="item in items.filter(item => !item.selected)"
+                @click="SelectItem(item)"
+                :class="{'no-extra-coverage': item.remainingLikes == 0 && item.remainingLoves == 0, tooltip: true}">{{item.name}}
+                <span class="tooltiptext">
+                    <span v-if="item.remainingLoves.length > 0 || item.remainingLikes.length > 0">Additional coverage</span>
+                    <br v-if="item.remainingLoves.length > 0 || item.remainingLikes.length > 0"/>
+                    <span v-if="item.remainingLoves.length > 0">Loves: {{item.remainingLoves.join(', ')}}</span>
+                    <br v-if="item.remainingLoves.length > 0"/>
+                    <span v-if="item.remainingLikes.length > 0">Likes: {{item.remainingLikes.join(', ')}}</span>
+                    <span v-if="item.remainingLoves.length == 0 && item.remainingLikes.length == 0">No more additional coverage!</span>
+                </span>
+            </div>
         </div>
         <div>
             <h2>Gifts chosen</h2>
-            <button v-for="item in items.filter(item => item.selected)" @click="UnselectItem(item)">{{item.name}}</button>
+            <div v-for="item in items.filter(item => item.selected)" @click="UnselectItem(item)" class="tooltip">{{item.name}}
+                <span class="tooltiptext">
+                    <span>Loves: {{villagers.filter(villager => villager.selectedLoves.includes(item.name)).map(villager => villager.name).join(', ')}}</span><br />
+                    <span>Likes: {{villagers.filter(villager => villager.selectedLikes.includes(item.name)).map(villager => villager.name).join(', ')}}</span>
+                </span>
+            </div>
         </div>
         <div >
             <h2>Villagers</h2>
-            <p v-if="nVillagersMissingLoveCoverage() != 0">{{nVillagersMissingLoveCoverage()}} villagers still missing love coverage.</p>
-            <p v-if="nVillagersMissingBothCoverage() != 0">{{nVillagersMissingBothCoverage()}} villagers still missing love or like coverage.</p>
+            <p v-if="nVillagersMissingLoveCoverage() != 0" style="color: red">{{nVillagersMissingLoveCoverage()}} villagers still missing love coverage.</p>
+            <p v-if="nVillagersMissingBothCoverage() != 0" style="color: red">{{nVillagersMissingBothCoverage()}} villagers still missing love or like coverage.</p>
             <p v-if="nVillagersMissingLoveCoverage() == 0" style="color: green">All villagers have love coverage!</p>
             <table>
                 <thead>
@@ -260,7 +309,19 @@
                     },
                     nVillagersMissingBothCoverage() {
                         return this.villagers.reduce((sum, villager) => (villager.selectedLikes.length == 0 && villager.selectedLoves.length == 0 ? 1 : 0) + sum, 0)
-                    }
+                    },
+                    itemToolTip(item) {
+                        const loves = item.remainingLoves.join(', ');
+                        const likes = item.remainingLikes.join(', ');
+                        if (loves == '' && likes == '') {
+                            return 'No more coverage for love for like';
+                        }
+                        if (loves == '') {
+                            return 'Likes: ' + likes;
+                        } else {
+                            return 'Loves: ' + loves + '\nLikes: ' + likes;
+                        }
+                    },
                 },
                 data() {
                     return {
