@@ -1,8 +1,278 @@
 <html>
 <head>
     <title>Stardew Valley Gift Coverage Tool</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        .no-extra-coverage {
+            color: gray
+        }
+    </style>
 </head>
 <body>
+    <script>
+        function CrawlDataFromStardewValleyWiki() {
+            // https://stardewvalleywiki.com/List_of_All_Gifts
+            let villagers = [];
+
+            function ParseItems(li) {
+                if (li.querySelector('span.nametemplate') != null) {
+                    return [li.querySelector('span a').getAttribute('title')];  
+                } else {
+                    const category = li.innerText.trim().split('(')[0].trim();
+                    let items = [];
+                    switch(category) {
+                        case 'All Eggs':
+                            items = ['Duck Egg', 'Egg', 'Brown Egg', 'Golden Egg', 'Large Egg', 'Large Brown Egg', 'Ostrich Egg', 'Void Egg'];
+                            break;
+                        case 'All Mushrooms':
+                            items = ['Common Mushroom', 'Chanterelle', 'Magma Cap', 'Morel', 'Red Mushroom', 'Purple Mushroom'];
+                            break;
+                        case 'All Fruit':
+                            items = ['Ancient Fruit', 'Apple', 'Apricot', 'Banana', 'Blackberry', 'Blueberry', 'Cactus Fruit', 'Cherry', 'Coconut', 'Cranberries', 'Crystal Fruit', 'Grape', 'Hot Pepper', 'Mango', 'Melon', 'Orange', 'Peach', 'Pineapple', 'Pomegranate', 'Powdermelon', 'Qi Fruit', 'Rhubarb', 'Salmonberry', 'Spice Berry', 'Starfruit', 'Strawberry', 'Wild Plum'];
+                            break;
+                        case 'All Milk':
+                            items = ['Milk', 'Large Milk', 'Goat Milk', 'Large Goat Milk'];
+                            break;
+                        case 'All Artifacts':
+                            items = ['All Artifacts'];
+                            // items = ['Dwarf Scroll I', 'Dwarf Scroll II', 'Dwarf Scroll III', 'Dwarf Scroll IV', 'Chipped Amphora', 'Arrowhead', 'Ancient Doll', 'Elvish Jewelry', 'Chewing Stick', 'Ornamental Fan', 'Dinosaur Egg', 'Rare Disc', 'Ancient Sword', 'Rusty Spoon', 'Rusty Spur', 'Rusty Cog', 'Chicken Statue', 'Ancient Seed', 'Prehistoric Tool', 'Dried Starfish', 'Anchor', 'Glass Shards', 'Bone Flute', 'Prehistoric Handaxe', 'Dwarvish Helm', 'Dwarf Gadget', 'Ancient Drum', 'Golden Mask', 'Golden Relic', 'Strange Doll', 'Strange Doll', 'Prehistoric Scapula', 'Prehistoric Tibia', 'Prehistoric Skull', 'Skeletal Hand', 'Prehistoric Rib', 'Prehistoric Vertebra', 'Skeletal Tail', 'Nautilus Fossil', 'Amphibian Fossil', 'Palm Fossil', 'Trilobite'];
+                            break;
+                        case 'All Books':
+                            items = ['Price Catalogue', 'Mapping Cave Systems', 'Way Of The Wind pt. 1', 'Way Of The Wind pt. 2', 'Monster Compendium', 'Friendship 101', 'Jack Be Nimble, Jack Be Thick', "Woody's Secret", 'Raccoon Journal', 'Jewels Of The Sea', 'Dwarvish Safety Manual', "The Art O' Crabbing", 'The Alleyway Buffet', 'The Diamond Hunter', 'Book of Mysteries', 'Horse: The Book', 'Treasure Appraisal Guide', "Ol' Slitherlegs", 'Animal Catalogue', 'Bait And Bobber', 'Book Of Stars', 'Combat Quarterly', 'Mining Monthly', 'Queen Of Sauce Cookbook', 'Stardew Valley Almanac', "Woodcutter's Weekly"];
+                            break;
+                        case 'All Geode Minerals':
+                            items = ['All Geode Minerals'];
+                            // items = ['Quartz', 'Earth Crystal', 'Frozen Tear', 'Fire Quartz', 'Emerald', 'Aquamarine', 'Ruby', 'Amethyst', 'Topaz', 'Jade', 'Diamond', 'Prismatic Shard', 'Tigerseye', 'Opal', 'Fire Opal', 'Alamite', 'Bixite', 'Baryte', 'Aerinite', 'Calcite', 'Dolomite', 'Esperite', 'Fluorapatite', 'Geminite', 'Helvite', 'Jamborite', 'Jagoite', 'Kyanite', 'Lunarite', 'Malachite', 'Neptunite', 'Lemon Stone', 'Nekoite', 'Orpiment', 'Petrified Slime', 'Thunder Egg', 'Pyrite', 'Ocean Stone', 'Ghost Crystal', 'Jasper', 'Celestine', 'Marble', 'Sandstone', 'Granite', 'Basalt', 'Limestone', 'Soapstone', 'Hematite', 'Mudstone', 'Obsidian', 'Slate', 'Fairy Stone', 'Star Shards', 'Geode', 'Frozen Geode', 'Magma Geode', 'Omni Geode'];
+                            break;
+                        case 'All Trinkets':
+                            items = ['All Trinkets'];
+                            // items = ['Basilisk Paw', 'Fairy Box', 'Frog Egg', 'Golden Spur', 'Ice Rod', 'Magic Hair Gel', 'Magic Quiver', 'Parrot Egg'];
+                            break;
+                        default:
+                            console.log('Undefined category: ' + category);
+                    }
+
+                    let exceptions = [];
+                    li.querySelectorAll('i a').forEach(a => {
+                        exceptions.push(a.getAttribute('title'));
+                    });
+
+                    items = items.filter(item => !exceptions.includes(item));
+                    return items;
+                }
+            }
+
+            villagers = [];
+            document.querySelectorAll('table.wikitable tbody tr:nth-of-type(n+2)').forEach(tr => {
+                const name = tr.querySelector('td:nth-of-type(1) a:nth-of-type(2)').innerText;
+                let loves = [];
+                tr.querySelectorAll('td:nth-of-type(3) li').forEach(li => {
+                    loves = loves.concat(ParseItems(li));
+                });
+                let likes = [];
+                tr.querySelectorAll('td:nth-of-type(4) li').forEach(li => {
+                    likes = likes.concat(ParseItems(li));
+                });
+
+                const villager = {
+                    name: name,
+                    loves: loves,
+                    likes: likes,
+                };
+                villagers.push(villager);
+            });
+
+            console.log(JSON.stringify(villagers));
+        }
+
+        let rawVillagerData = [{"name":"Alex","loves":["Complete Breakfast","Jack Be Nimble, Jack Be Thick","Salmon Dinner"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Dinosaur Egg","Field Snack","Parrot Egg"]},{"name":"Elliott","loves":["Crab Cakes","Duck Feather","Lobster","Pomegranate","Squid Ink","Tom Kha Soup"],"likes":["Price Catalogue","Mapping Cave Systems","Way Of The Wind pt. 1","Way Of The Wind pt. 2","Monster Compendium","Friendship 101","Jack Be Nimble, Jack Be Thick","Woody's Secret","Raccoon Journal","Jewels Of The Sea","Dwarvish Safety Manual","The Art O' Crabbing","The Alleyway Buffet","The Diamond Hunter","Book of Mysteries","Horse: The Book","Treasure Appraisal Guide","Ol' Slitherlegs","Animal Catalogue","Bait And Bobber","Book Of Stars","Combat Quarterly","Mining Monthly","Queen Of Sauce Cookbook","Stardew Valley Almanac","Woodcutter's Weekly","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Powdermelon","Qi Fruit","Rhubarb","Spice Berry","Starfruit","Strawberry","Wild Plum","Octopus","Squid"]},{"name":"Harvey","loves":["Coffee","Jellies and Pickles","Super Meal","Truffle Oil","Wine"],"likes":["Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Starfruit","Strawberry","Wild Plum","Common Mushroom","Chanterelle","Magma Cap","Morel","Purple Mushroom","Daffodil","Dandelion","Duck Egg","Duck Feather","Ginger","Goat Milk","Hazelnut","Holly","Large Goat Milk","Leek","Quartz","Snow Yam","Spring Onion","Wild Horseradish","Winter Root"]},{"name":"Sam","loves":["Cactus Fruit","Maple Bar","Pizza","Tigerseye"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Joja Cola"]},{"name":"Sebastian","loves":["Frog Egg","Frozen Tear","Obsidian","Pumpkin Soup","Sashimi","Void Egg"],"likes":["Combat Quarterly","Flounder","Monster Compendium","Quartz"]},{"name":"Shane","loves":["Beer","Hot Pepper","Pepper Poppers","Pizza"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum"]},{"name":"Abigail","loves":["Amethyst","Banana Pudding","Blackberry Cobbler","Chocolate Cake","Monster Compendium","Pufferfish","Pumpkin","Spicy Eel"],"likes":["Ancient Sword","Basilisk Paw","Bone Flute","Combat Quarterly","Quartz"]},{"name":"Emily","loves":["Amethyst","Aquamarine","Cloth","Emerald","Jade","Parrot Egg","Ruby","Survival Burger","Topaz","Wool"],"likes":["Daffodil","Quartz"]},{"name":"Haley","loves":["Coconut","Fruit Salad","Pink Cake","Sunflower"],"likes":["Daffodil"]},{"name":"Leah","loves":["Goat Cheese","Poppyseed Muffin","Salad","Stir Fry","Truffle","Vegetable Medley","Wine"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum","Milk","Large Milk","Goat Milk","Large Goat Milk","Common Mushroom","Chanterelle","Magma Cap","Morel","Purple Mushroom","Daffodil","Dandelion","Driftwood","Ginger","Hazelnut","Holly","Leek","Snow Yam","Spring Onion","Wild Horseradish","Winter Root"]},{"name":"Maru","loves":["Battery Pack","Cauliflower","Cheese Cauliflower","Diamond","Dwarf Gadget","Gold Bar","Iridium Bar","Miner's Treat","Pepper Poppers","Radioactive Bar","Rhubarb Pie","Strawberry"],"likes":["Chanterelle","Magma Cap","Morel","Purple Mushroom","Copper Bar","Iron Bar","Oak Resin","Pine Tar","Quartz","Radioactive Ore"]},{"name":"Penny","loves":["Price Catalogue","Mapping Cave Systems","Way Of The Wind pt. 1","Way Of The Wind pt. 2","Monster Compendium","Friendship 101","Jack Be Nimble, Jack Be Thick","Woody's Secret","Raccoon Journal","Jewels Of The Sea","Dwarvish Safety Manual","The Art O' Crabbing","The Alleyway Buffet","The Diamond Hunter","Book of Mysteries","Horse: The Book","Treasure Appraisal Guide","Ol' Slitherlegs","Animal Catalogue","Bait And Bobber","Book Of Stars","Combat Quarterly","Mining Monthly","Queen Of Sauce Cookbook","Stardew Valley Almanac","Woodcutter's Weekly","Diamond","Emerald","Melon","Poppy","Poppyseed Muffin","Red Plate","Roots Platter","Sandfish","Tom Kha Soup"],"likes":["All Artifacts","Milk","Large Milk","Goat Milk","Large Goat Milk","Dandelion","Leek"]},{"name":"Caroline","loves":["Fish Taco","Green Tea","Summer Spangle","Tropical Curry"],"likes":["Daffodil","Tea Leaves","Wild Horseradish"]},{"name":"Clint","loves":["Amethyst","Aquamarine","Artichoke Dip","Emerald","Fiddlehead Risotto","Gold Bar","Iridium Bar","Jade","Omni Geode","Ruby","Topaz"],"likes":["Copper Bar","Iron Bar","Mining Monthly"]},{"name":"Demetrius","loves":["Bean Hotpot","Ice Cream","Rice Pudding","Strawberry"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Wild Plum","Dinosaur Egg","Purple Mushroom"]},{"name":"Dwarf","loves":["Amethyst","Aquamarine","Emerald","Jade","Lava Eel","Lemon Stone","Omni Geode","Ruby","Topaz"],"likes":["All Artifacts","Cave Carrot","Quartz"]},{"name":"Evelyn","loves":["Beet","Chocolate Cake","Diamond","Fairy Rose","Raisins","Stuffing","Tulip"],"likes":["Milk","Large Milk","Goat Milk","Large Goat Milk","Broken Glasses","Clam","Cockle","Coral","Daffodil","Mussel","Nautilus Shell","Oyster","Sea Urchin"]},{"name":"George","loves":["Fried Mushroom","Leek"],"likes":["Daffodil"]},{"name":"Gus","loves":["Diamond","Escargot","Fish Taco","Orange","Tropical Curry"],"likes":["Daffodil","Truffle"]},{"name":"Jas","loves":["Ancient Doll","Fairy Box","Fairy Rose","Pink Cake","Plum Pudding","Strange Doll (green)","Strange Doll (yellow)"],"likes":["Milk","Large Milk","Goat Milk","Large Goat Milk","Coconut","Daffodil"]},{"name":"Jodi","loves":["Chocolate Cake","Crispy Bass","Diamond","Eggplant Parmesan","Fried Eel","Pancakes","Rhubarb Pie","Vegetable Medley"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Starfruit","Strawberry","Wild Plum","Milk","Large Milk","Goat Milk","Large Goat Milk"]},{"name":"Kent","loves":["Fiddlehead Risotto","Roasted Hazelnuts"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum","Daffodil","Dwarvish Safety Manual"]},{"name":"Krobus","loves":["Diamond","Iridium Bar","Monster Compendium","Monster Musk","Pumpkin","Void Egg","Void Mayonnaise","Wild Horseradish"],"likes":["Gold Bar","Quartz","Seafoam Pudding","Strange Bun"]},{"name":"Leo","loves":["Duck Feather","Mango","Ostrich Egg","Parrot Egg","Poi"],"likes":["Dragon Tooth","Nautilus Shell","Quartz","Rainbow Shell","Sea Urchin","Spice Berry"]},{"name":"Lewis","loves":["Autumn's Bounty","Glazed Yams","Green Tea","Hot Pepper","Vegetable Medley"],"likes":["Blueberry","Cactus Fruit","Coconut"]},{"name":"Linus","loves":["Blueberry Tart","Cactus Fruit","Coconut","Dish O' The Sea","The Alleyway Buffet","Yam"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cherry","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum","Milk","Large Milk","Goat Milk","Large Goat Milk","Common Mushroom","Chanterelle","Magma Cap","Morel","Purple Mushroom","Daffodil","Dandelion","Ginger","Hazelnut","Holly","Leek","Snow Yam","Spring Onion","Wild Horseradish","Winter Root"]},{"name":"Marnie","loves":["Diamond","Farmer's Lunch","Pink Cake","Pumpkin Pie"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Milk","Large Milk","Goat Milk","Large Goat Milk","Stardew Valley Almanac","Quartz"]},{"name":"Pam","loves":["Beer","Cactus Fruit","Glazed Yams","Mead","Pale Ale","Parsnip","Parsnip Soup","Piña Colada"],"likes":["Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum","Milk","Large Milk","Goat Milk","Large Goat Milk","Daffodil"]},{"name":"Pierre","loves":["Fried Calamari","Price Catalogue"],"likes":["Duck Egg","Egg","Brown Egg","Golden Egg","Large Egg","Large Brown Egg","Ostrich Egg","Milk","Large Milk","Goat Milk","Large Goat Milk","Daffodil","Dandelion"]},{"name":"Robin","loves":["Goat Cheese","Peach","Spaghetti","Woody's Secret"],"likes":["Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum","Milk","Large Milk","Goat Milk","Large Goat Milk","Hardwood","Quartz","Woodcutter's Weekly"]},{"name":"Sandy","loves":["Crocus","Daffodil","Mango Sticky Rice","Sweet Pea"],"likes":["Ancient Fruit","Apple","Apricot","Banana","Blackberry","Blueberry","Cactus Fruit","Cherry","Coconut","Cranberries","Crystal Fruit","Grape","Hot Pepper","Mango","Melon","Orange","Peach","Pineapple","Pomegranate","Powdermelon","Qi Fruit","Rhubarb","Salmonberry","Spice Berry","Starfruit","Strawberry","Wild Plum","Goat Milk","Large Goat Milk","Quartz","Wool"]},{"name":"Vincent","loves":["Cranberry Candy","Frog Egg","Ginger Ale","Grape","Pink Cake","Snail"],"likes":["Milk","Large Milk","Goat Milk","Large Goat Milk","Coconut","Daffodil"]},{"name":"Willy","loves":["Catfish","Diamond","Gold Bar","Iridium Bar","Jewels Of The Sea","Mead","Octopus","Pumpkin","Sea Cucumber","Sturgeon","The Art O' Crabbing"],"likes":["Bait And Bobber","Lingcod","Quartz","Seafoam Pudding","Tiger Trout"]},{"name":"Wizard","loves":["Book of Mysteries","Purple Mushroom","Solar Essence","Super Cucumber","Void Essence"],"likes":["All Geode Minerals","All Trinkets","Iridium Bar","Quartz"]}];
+    </script>
     <h1>Stardew Valley Gift Coverage Tool</h1>
+    <div id="app">
+        <div>
+            <h2>Gifts to choose</h2>
+            <button v-for="item in items.filter(item => !item.selected)" @click="SelectItem(item)" :class="{'no-extra-coverage': item.remainingLikes == 0 && item.remainingLoves == 0}">{{item.name}}</button>
+        </div>
+        <div>
+            <h2>Gifts chosen</h2>
+            <button v-for="item in items.filter(item => item.selected)" @click="UnselectItem(item)">{{item.name}}</button>
+        </div>
+        <div >
+            <h2>Villagers</h2>
+            <p v-if="nVillagersMissingLoveCoverage() != 0">{{nVillagersMissingLoveCoverage()}} villagers still missing love coverage.</p>
+            <p v-if="nVillagersMissingBothCoverage() != 0">{{nVillagersMissingBothCoverage()}} villagers still missing love or like coverage.</p>
+            <p v-if="nVillagersMissingLoveCoverage() == 0" style="color: green">All villagers have love coverage!</p>
+            <table>
+                <thead>
+                    <td>Villager</td>
+                    <td>Selected Love Item</td>
+                    <td>Selected Like Item</td>
+                </thead>
+                <tbody>
+                    <tr v-for="villager in villagers">
+                        <td>{{villager.name}}</td>
+                        <td>{{villager.selectedLoves.join(", ")}}</td>
+                        <td>{{villager.selectedLikes.join(", ")}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue
+        
+        class Item {
+            constructor(name) {
+                this.name = name;
+                this.loves = [];
+                this.likes = [];
+
+                this.selected = false;
+                this.remainingLoves = [];
+                this.remainingLikes = [];
+            }
+        }
+
+        class Villager {
+            constructor(name, loves, likes) {
+                this.name = name;
+                this.loves = loves;
+                this.likes = likes;
+
+                this.selectedLoves = [];
+                this.selectedLikes = [];
+            }
+        }
+
+        let items = [];
+        let villagers = [];
+        let selectedItems = [];
+
+        function Initialize() {
+            rawVillagerData.forEach(rawVillager => {
+                villagers.push(new Villager(
+                    rawVillager.name,
+                    rawVillager.loves,
+                    rawVillager.likes,
+                ));
+            });
+
+            villagers.forEach(villager => {
+                villager.loves.forEach(itemName => {
+                    let item = items.find(item => item.name == itemName);
+                    if (item == null) {
+                        item = new Item(itemName);
+                        items.push(item);
+                    }
+                    item.loves.push(villager.name);
+                });
+                villager.likes.forEach(itemName => {
+                    let item = items.find(item => item.name == itemName);
+                    if (item == null) {
+                        item = new Item(itemName);
+                        items.push(item);
+                    }
+                    item.likes.push(villager.name);
+                });
+            });
+
+            items.forEach(item => {
+                item.remainingLoves = [...item.loves];
+                item.remainingLikes = [...item.likes];
+            });
+            items = items.sort((lhs, rhs) => {
+                if (lhs.remainingLoves.length == rhs.remainingLoves.length) {
+                    return rhs.remainingLikes.length - lhs.remainingLikes.length;
+                } else {
+                    return rhs.remainingLoves.length - lhs.remainingLoves.length;
+                }
+            });
+
+            createApp({
+                methods: {
+                    SelectItem(item) {
+                        let allItems = this.items;
+                        item.selected = true;
+
+                        this.villagers.forEach(villager => {
+                            if (villager.loves.includes(item.name)) {
+                                villager.selectedLoves.push(item.name);
+                                allItems.forEach(allItem => {
+                                    allItem.remainingLoves = allItem.remainingLoves.filter(it => it != villager.name);
+                                });
+                            }
+                            if (villager.likes.includes(item.name)) {
+                                villager.selectedLikes.push(item.name);
+                                allItems.forEach(allItem => {
+                                    allItem.remainingLikes = allItem.remainingLikes.filter(it => it != villager.name);
+                                });
+                            }
+                        });
+
+                        this.items = this.items.sort((lhs, rhs) => {
+                            if (lhs.remainingLoves.length == rhs.remainingLoves.length) {
+                                return rhs.remainingLikes.length - lhs.remainingLikes.length;
+                            } else {
+                                return rhs.remainingLoves.length - lhs.remainingLoves.length;
+                            }
+                        });
+                    },
+                    UnselectItem(item) {
+                        let allItems = this.items;
+                        item.selected = false;
+
+                        this.villagers.filter(villager => item.loves.includes(villager.name)).forEach(villager => {
+                            villager.selectedLoves = villager.selectedLoves.filter(it => it != item.name);
+                            if (villager.selectedLoves.length == 0) {
+                                allItems.forEach(allItem => {
+                                    if (allItem.loves.includes(villager.name)) {
+                                        allItem.remainingLoves.push(villager.name);
+                                    }
+                                });
+                            }
+                        });
+                        villagers.filter(villager => item.likes.includes(villager.name)).forEach(villager => {
+                            villager.selectedLikes = villager.selectedLikes.filter(it => it != item.name);
+                            if (villager.selectedLikes.length == 0) {
+                                allItems.forEach(allItem => {
+                                    if (allItem.likes.includes(villager.name)) {
+                                        allItem.remainingLikes.push(villager.name);
+                                    }
+                                });
+                            }
+                        });
+
+                        this.items = this.items.sort((lhs, rhs) => {
+                            if (lhs.remainingLoves.length == rhs.remainingLoves.length) {
+                                return rhs.remainingLikes.length - lhs.remainingLikes.length;
+                            } else {
+                                return rhs.remainingLoves.length - lhs.remainingLoves.length;
+                            }
+                        });
+                    },
+                    nVillagersMissingLoveCoverage() {
+                        return this.villagers.reduce((sum, villager) => (villager.selectedLoves.length == 0 ? 1 : 0) + sum, 0)
+                    },
+                    nVillagersMissingBothCoverage() {
+                        return this.villagers.reduce((sum, villager) => (villager.selectedLikes.length == 0 && villager.selectedLoves.length == 0 ? 1 : 0) + sum, 0)
+                    }
+                },
+                data() {
+                    return {
+                        villagers: villagers,
+                        items: items,
+                    }
+                }
+            }).mount('#app')
+        }
+
+        Initialize();
+
+    </script>
 </body>
 </html>
